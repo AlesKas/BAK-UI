@@ -1,0 +1,1 @@
+pyuic5 -x input.ui -o output.py
