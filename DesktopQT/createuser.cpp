@@ -48,7 +48,8 @@ void CreateUser::on_buttonBox_accepted()
         j["userName"] = userName.toUtf8().constData();
         j["password"] = passwd.toUtf8().constData();
         std::string jsonData = j.dump();
-        long httpCode = makeCurlRequest("http://127.0.0.1:8000/users/create", &readBuffer, curl, jsonData.c_str());
+        std::string addr = API_ADDR + "/users/create";
+        long httpCode = makeCurlRequest(addr.c_str(), &readBuffer, curl, jsonData.c_str());
 
         if (httpCode == 204) {
             QMessageBox msgBox;
