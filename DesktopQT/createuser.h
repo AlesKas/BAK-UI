@@ -20,6 +20,8 @@ private slots:
 
     void on_buttonBox_rejected();
 
+    void on_showPasswd_stateChanged(int arg1);
+
 private:
     Ui::CreateUser *ui;
 };

@@ -1,8 +1,11 @@
 #include "createuser.h"
 #include "ui_createuser.h"
 #include "qmessagebox.h"
-#include <curl/curl.h>
-#include <iostream>
+#include "utils.h"
+#include <nlohmann/json.hpp>
+#include <typeinfo>
+
+using json = nlohmann::json;
 
 CreateUser::CreateUser(QWidget *parent) :
     QDialog(parent),
@@ -20,24 +23,65 @@ CreateUser::~CreateUser()
 
 void CreateUser::on_buttonBox_accepted()
 {
-    CURL *curl = curl_easy_init();
-    CURLcode res;
-    if (curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, "https://stackoverflow.com/");
-        res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-        std::cout << res << std::endl;
-    }
-   /* QString passwd = ui->PasswdInput->text();
+
+    QString passwd = ui->PasswdInput->text();
     QString passwdRepeat = ui->PasswdRepeat->text();
-    if (passwd != passwdRepeat) {
+    QString userName = ui->UserNameInput->text();
+    if (userName == "" || passwd == "" || passwdRepeat == "") {
         QMessageBox msgBox;
-        msgBox.setText("Passwords are not matching");
+        msgBox.setText("Please enter your credentials.");
         msgBox.exec();
-    }*/
+        return;
+    }
+    if (passwd != passwdRepeat) {
+         QMessageBox msgBox;
+         msgBox.setText("Passwords are not matching");
+         msgBox.exec();
+         return;
+    }
+
+    CURL *curl = curl_easy_init();
+    std::string readBuffer;
+
+    if (passwd == passwdRepeat && userName != "") {
+        json j;
+        j["userName"] = userName.toUtf8().constData();
+        j["password"] = passwd.toUtf8().constData();
+        std::string jsonData = j.dump();
+        long httpCode = makeCurlRequest("http://127.0.0.1:8000/users/create", &readBuffer, curl, jsonData.c_str());
+
+        if (httpCode == 204) {
+            QMessageBox msgBox;
+            msgBox.setWindowTitle("Success");
+            msgBox.setIcon(QMessageBox::Information);
+            msgBox.setText("User created successfully.");
+            msgBox.exec();
+            close();
+        } else {
+            json j = json::parse(readBuffer);
+            auto msg = j["error"]["message"].get<std::string>();
+            QMessageBox msgBox;
+            msgBox.setWindowTitle("Error");
+            msgBox.setIcon(QMessageBox::Critical);
+            msgBox.setText(QString::fromStdString(msg));
+            msgBox.exec();
+        }
+    }
 }
 
 void CreateUser::on_buttonBox_rejected()
 {
     close();
+}
+
+void CreateUser::on_showPasswd_stateChanged(int arg1)
+{
+    auto checkBox = ui->showPasswd;
+    if (checkBox->isChecked()) {
+        ui->PasswdInput->setEchoMode(QLineEdit::Normal);
+        ui->PasswdRepeat->setEchoMode(QLineEdit::Normal);
+    } else {
+        ui->PasswdInput->setEchoMode(QLineEdit::Password);
+        ui->PasswdRepeat->setEchoMode(QLineEdit::Password);
+    }
 }
