@@ -12,16 +12,19 @@ SOURCES += \
     createuser.cpp \
     main.cpp \
     mainwindow.cpp \
+    userworkspace.cpp \
     utils.cpp
 
 HEADERS += \
     createuser.h \
     mainwindow.h \
+    userworkspace.h \
     utils.h
 
 FORMS += \
     createuser.ui \
-    mainwindow.ui
+    mainwindow.ui \
+    userworkspace.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -29,3 +32,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 unix:!macx: LIBS += -lcurl
+
+unix: CONFIG += link_pkgconfig
+unix: PKGCONFIG += openssl

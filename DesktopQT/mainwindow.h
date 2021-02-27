@@ -19,6 +19,10 @@ public:
 private slots:
     void on_actionSign_In_triggered();
 
+    void on_btn_login_clicked();
+
+    void on_btn_cancel_clicked();
+
 private:
     Ui::MainWindow *ui;
 };

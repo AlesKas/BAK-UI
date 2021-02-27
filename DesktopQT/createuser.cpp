@@ -1,11 +1,6 @@
 #include "createuser.h"
 #include "ui_createuser.h"
-#include "qmessagebox.h"
 #include "utils.h"
-#include <nlohmann/json.hpp>
-#include <typeinfo>
-
-using json = nlohmann::json;
 
 CreateUser::CreateUser(QWidget *parent) :
     QDialog(parent),
@@ -28,44 +23,42 @@ void CreateUser::on_buttonBox_accepted()
     QString passwdRepeat = ui->PasswdRepeat->text();
     QString userName = ui->UserNameInput->text();
     if (userName == "" || passwd == "" || passwdRepeat == "") {
-        QMessageBox msgBox;
-        msgBox.setText("Please enter your credentials.");
-        msgBox.exec();
+        showMessaggeBox("Please enter your credentials.", "Error", QMessageBox::Critical);
         return;
     }
     if (passwd != passwdRepeat) {
-         QMessageBox msgBox;
-         msgBox.setText("Passwords are not matching");
-         msgBox.exec();
-         return;
+        showMessaggeBox("Passwords are not matching.", "Error", QMessageBox::Critical);
+        return;
     }
-
-    CURL *curl = curl_easy_init();
-    std::string readBuffer;
 
     if (passwd == passwdRepeat && userName != "") {
         json j;
+        std::string readBuffer;
+
+        std::string addr = API_ADDR + "/salt";
+        long httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL);
+        if (httpCode != 200) {
+            showMessaggeBox("Error while making API request", "Error", QMessageBox::Critical);
+            return;
+        }
+        json resp = json::parse(readBuffer);
+        auto salt = resp["salt"].get<std::string>();
+        auto saltedPasswd = passwd.toUtf8().constData() + salt;
+        auto passwdHash = sha256(saltedPasswd);
+
         j["userName"] = userName.toUtf8().constData();
-        j["password"] = passwd.toUtf8().constData();
-        std::string jsonData = j.dump();
-        std::string addr = API_ADDR + "/users/create";
-        long httpCode = makeCurlRequest(addr.c_str(), &readBuffer, curl, jsonData.c_str());
+        j["password"] = passwdHash;
+        addr = API_ADDR + "/users/create";
+        readBuffer = "";
+        httpCode = makeCurlRequest(addr.c_str(), &readBuffer, j.dump().c_str());
 
         if (httpCode == 204) {
-            QMessageBox msgBox;
-            msgBox.setWindowTitle("Success");
-            msgBox.setIcon(QMessageBox::Information);
-            msgBox.setText("User created successfully.");
-            msgBox.exec();
+            showMessaggeBox("User created successfully.", "Success", QMessageBox::Information);
             close();
         } else {
             json j = json::parse(readBuffer);
             auto msg = j["error"]["message"].get<std::string>();
-            QMessageBox msgBox;
-            msgBox.setWindowTitle("Error");
-            msgBox.setIcon(QMessageBox::Critical);
-            msgBox.setText(QString::fromStdString(msg));
-            msgBox.exec();
+            showMessaggeBox(msg.c_str(), "Error", QMessageBox::Critical);
         }
     }
 }

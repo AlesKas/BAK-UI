@@ -2,3 +2,4 @@
 Prerequisites:
  - libcurl
  - nlohmann/json
+ - openssl
