@@ -35,3 +35,6 @@ unix:!macx: LIBS += -lcurl
 
 unix: CONFIG += link_pkgconfig
 unix: PKGCONFIG += openssl
+
+RESOURCES += \
+    resources.qrc

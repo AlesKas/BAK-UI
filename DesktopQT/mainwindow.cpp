@@ -4,6 +4,8 @@
 #include "userworkspace.h"
 #include "utils.h"
 
+extern std::string API_ADDR;
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -12,13 +14,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->input_password->setEchoMode(QLineEdit::Password);
     QPushButton *btnCancel = ui->btn_cancel;
     QObject::connect(btnCancel, SIGNAL(clicked()), this, SLOT(close()));
-    std::string readBuffer;
-    std::string addr = API_ADDR + "/apistatus";
-    long httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL);
-    if (httpCode != 200) {
-        showMessaggeBox("Cannot connect to server.", "Critical error", QMessageBox::Critical);
-        exit(-1);
-    }
 }
 
 MainWindow::~MainWindow()

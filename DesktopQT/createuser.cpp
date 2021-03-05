@@ -2,6 +2,8 @@
 #include "ui_createuser.h"
 #include "utils.h"
 
+extern std::string API_ADDR;
+
 CreateUser::CreateUser(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::CreateUser)

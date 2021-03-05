@@ -1,5 +1,41 @@
 #include "utils.h"
 
+std::string API_ADDR;
+
+void initApiAddr() {
+    std::string* IPaddr = const_cast <std::string*>(&API_ADDR);
+    std::string addr1 = "http://192.168.0.10:8000";
+    std::string addr2 = "http://85.160.74.136";
+    std::string addr = addr1 + "/apistatus";
+    long httpCode = curlApiStatus(addr.c_str());
+    if (httpCode != 200) {
+        addr = addr2 + "/apistatus";
+        httpCode = curlApiStatus(addr.c_str());
+        if (httpCode != 200) {
+            showMessaggeBox("Cannot connect to server.", "Critical error", QMessageBox::Critical);
+            exit(-1);
+        } else {
+            *IPaddr = addr2;
+        }
+    } else {
+        *IPaddr = addr1;
+    }
+}
+
+long curlApiStatus(const char* url) {
+    long returnCode;
+    CURL *curl = curl_easy_init();
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1);
+    curl_easy_perform(curl);
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &returnCode);
+    curl_easy_cleanup(curl);
+
+    return returnCode;
+}
+
 std::size_t callback(const char* in, std::size_t size, std::size_t num, std::string* out) {
         const std::size_t totalBytes(size * num);
         out->append(in, totalBytes);
@@ -16,8 +52,8 @@ long makeCurlRequest(const char* url, std::string *returnData, const char* postD
     // Don't bother trying IPv6, which would increase DNS resolution time.
     curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
-    // Don't wait forever, time out after 10 seconds.
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
+    // Don't wait forever, time out after 5 seconds.
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
 
     // Hook up data container (will be passed as the last parameter to the
@@ -42,9 +78,9 @@ long makeCurlRequest(const char* url, std::string *returnData, const char* postD
     return returnCode;
 }
 
-std::string to_hex(unsigned char s) {
+std::string to_hex(unsigned char ch) {
     std::stringstream ss;
-    ss << std::hex << (int) s;
+    ss << std::hex << (int) ch;
     return ss.str();
 }
 
@@ -69,4 +105,15 @@ void showMessaggeBox(const char* message, const char* title, QMessageBox::Icon i
     box.setIcon(icon);
     box.setText(message);
     box.exec();
+}
+
+std::string splitStringByLength(std::string input) {
+    for (int i = 12; i < input.length(); i+=12) {
+        input.insert(i, "\n");
+    }
+    return input;
+}
+
+std::string getIcon(std::string fileType) {
+    return iconPaths.at(fileType);
 }

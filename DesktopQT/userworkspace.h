@@ -14,6 +14,10 @@ class UserWorkspace : public QMainWindow
 public:
     explicit UserWorkspace(QWidget *parent = nullptr, std::string user = "null");
     ~UserWorkspace();
+    void logOut();
+    void exit();
+    void uploadFile();
+    void fillWorkSpace();
 
 private:
     std::string currentUser;

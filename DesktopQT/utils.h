@@ -10,11 +10,19 @@
 
 using json = nlohmann::json;
 
-const std::string API_ADDR = "http://85.160.74.136";
+const std::map<std::string, std::string> iconPaths {
+    {"png", ":/icons/img/image.png"},
+    {"jpg", ":/icons/img/image.png"},
+    {"dir", ":/icons/img/directory.png"},
+};
 
-void showMessaggeBox(const char*, const char*, QMessageBox::Icon);
-std::size_t callback(const char*, std::size_t, std::size_t, std::string*);
-long makeCurlRequest(const char*, std::string*, const char*);
-std::string to_hex(unsigned char);
-std::string sha256(std::string);
+void initApiAddr();
+long curlApiStatus(const char* url);
+std::string to_hex(unsigned char ch);
+std::string sha256(std::string line);
+std::string getIcon(std::string fileType);
+std::string splitStringByLength(std::string input);
+void showMessaggeBox(const char* message, const char* title, QMessageBox::Icon icon);
+std::size_t callback(const char* in, std::size_t size, std::size_t num, std::string* out);
+long makeCurlRequest(const char* url, std::string* returnData, const char* postData);
 #endif // UTILS_H
