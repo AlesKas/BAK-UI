@@ -17,7 +17,6 @@ const std::map<std::string, std::string> iconPaths {
 };
 
 void initApiAddr();
-long curlApiStatus(const char* url);
 std::string to_hex(unsigned char ch);
 std::string sha256(std::string line);
 std::string getIcon(std::string fileType);

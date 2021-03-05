@@ -3,37 +3,25 @@
 std::string API_ADDR;
 
 void initApiAddr() {
-    std::string* IPaddr = const_cast <std::string*>(&API_ADDR);
     std::string addr1 = "http://192.168.0.10:8000";
     std::string addr2 = "http://85.160.74.136";
     std::string addr = addr1 + "/apistatus";
-    long httpCode = curlApiStatus(addr.c_str());
+    std::string readBuffer;
+    long httpCode;
+    httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL);
     if (httpCode != 200) {
         addr = addr2 + "/apistatus";
-        httpCode = curlApiStatus(addr.c_str());
+        httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL);
         if (httpCode != 200) {
             showMessaggeBox("Cannot connect to server.", "Critical error", QMessageBox::Critical);
             exit(-1);
         } else {
-            *IPaddr = addr2;
+            API_ADDR = addr2;
         }
     } else {
-        *IPaddr = addr1;
+        API_ADDR = addr1;
     }
-}
 
-long curlApiStatus(const char* url) {
-    long returnCode;
-    CURL *curl = curl_easy_init();
-
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 1);
-    curl_easy_perform(curl);
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &returnCode);
-    curl_easy_cleanup(curl);
-
-    return returnCode;
 }
 
 std::size_t callback(const char* in, std::size_t size, std::size_t num, std::string* out) {
