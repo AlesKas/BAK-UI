@@ -38,7 +38,7 @@ void CreateUser::on_buttonBox_accepted()
         std::string readBuffer;
 
         std::string addr = API_ADDR + "/salt";
-        long httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL);
+        long httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL, 5);
         if (httpCode != 200) {
             showMessaggeBox("Error while making API request", "Error", QMessageBox::Critical);
             return;
@@ -52,7 +52,7 @@ void CreateUser::on_buttonBox_accepted()
         j["password"] = passwdHash;
         addr = API_ADDR + "/users/create";
         readBuffer = "";
-        httpCode = makeCurlRequest(addr.c_str(), &readBuffer, j.dump().c_str());
+        httpCode = makeCurlRequest(addr.c_str(), &readBuffer, j.dump().c_str(), 10);
 
         if (httpCode == 204) {
             showMessaggeBox("User created successfully.", "Success", QMessageBox::Information);

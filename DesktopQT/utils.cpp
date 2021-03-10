@@ -8,10 +8,10 @@ void initApiAddr() {
     std::string addr = addr1 + "/apistatus";
     std::string readBuffer;
     long httpCode;
-    httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL);
+    httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL, 1);
     if (httpCode != 200) {
         addr = addr2 + "/apistatus";
-        httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL);
+        httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL, 1);
         if (httpCode != 200) {
             showMessaggeBox("Cannot connect to server.", "Critical error", QMessageBox::Critical);
             exit(-1);
@@ -30,7 +30,7 @@ std::size_t callback(const char* in, std::size_t size, std::size_t num, std::str
         return totalBytes;
     }
 
-long makeCurlRequest(const char* url, std::string *returnData, const char* postData) {
+long makeCurlRequest(const char* url, std::string *returnData, const char* postData, int timeout) {
     long returnCode;
     returnData->clear();
     CURL *curl = curl_easy_init();
@@ -41,7 +41,7 @@ long makeCurlRequest(const char* url, std::string *returnData, const char* postD
     curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
     // Don't wait forever, time out after 5 seconds.
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
 
     // Hook up data container (will be passed as the last parameter to the
@@ -103,5 +103,49 @@ std::string splitStringByLength(std::string input) {
 }
 
 std::string getIcon(std::string fileType) {
-    return iconPaths.at(fileType);
+    if (iconPaths.find(fileType) != iconPaths.end()) {
+        return iconPaths.at(fileType);
+    } else {
+        return ":/icons/img/document.png";
+    }
+}
+
+long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* postData) {
+    long returnCode;
+    CURL *curl;
+    struct stat stats;
+    stat(postData, &stats);
+
+    struct curl_httppost *formpost = NULL;
+    struct curl_httppost *lastptr = NULL;
+    struct curl_slist *headerlist = NULL;
+    static const char buf[] =  "Expect:";
+
+    curl_global_init(CURL_GLOBAL_ALL);
+
+    curl_formadd(&formpost,
+                 &lastptr,
+                 CURLFORM_COPYNAME, "fileName",
+                 CURLFORM_FILE, postData,
+                 CURLFORM_END);
+
+    curl = curl_easy_init();
+
+    headerlist = curl_slist_append(headerlist, buf);
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+
+    curl_easy_setopt(curl, CURLOPT_HTTPPOST, formpost);
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+    curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, stats.st_size);
+    curl_easy_setopt (curl, CURLOPT_VERBOSE, 0L);
+    uw->setCursor(Qt::BusyCursor);
+    curl_easy_perform(curl);
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &returnCode);
+
+    curl_easy_cleanup(curl);
+    curl_formfree(formpost);
+    curl_slist_free_all(headerlist);
+
+    uw->setCursor(Qt::ArrowCursor);
+    return returnCode;
 }

@@ -2,5 +2,6 @@
     <qresource prefix="/icons">
         <file>img/image.png</file>
         <file>img/directory.png</file>
+        <file>img/document.png</file>
     </qresource>
 </RCC>

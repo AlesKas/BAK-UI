@@ -7,13 +7,23 @@
 #include <openssl/sha.h>
 #include "qmessagebox.h"
 #include <nlohmann/json.hpp>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <qprogressdialog.h>
+#include <qprocess.h>
+#include <qfuture.h>
+#include <QThread>
+#include <userworkspace.h>
+
+#define MINIMAL_PROGRESS_FUNCTIONALITY_INTERVAL     30000
 
 using json = nlohmann::json;
 
 const std::map<std::string, std::string> iconPaths {
     {"png", ":/icons/img/image.png"},
     {"jpg", ":/icons/img/image.png"},
-    {"dir", ":/icons/img/directory.png"},
+    {"", ":/icons/img/directory.png"},
 };
 
 void initApiAddr();
@@ -21,7 +31,8 @@ std::string to_hex(unsigned char ch);
 std::string sha256(std::string line);
 std::string getIcon(std::string fileType);
 std::string splitStringByLength(std::string input);
+long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* postData);
 void showMessaggeBox(const char* message, const char* title, QMessageBox::Icon icon);
 std::size_t callback(const char* in, std::size_t size, std::size_t num, std::string* out);
-long makeCurlRequest(const char* url, std::string* returnData, const char* postData);
+long makeCurlRequest(const char* url, std::string* returnData, const char* postData, int timeout);
 #endif // UTILS_H

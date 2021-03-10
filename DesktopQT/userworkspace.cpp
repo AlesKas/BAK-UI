@@ -31,7 +31,11 @@ UserWorkspace::~UserWorkspace()
 }
 
 void UserWorkspace::uploadFile() {
-    QFileDialog::getOpenFileNames(this, "Select file to upload.", QDir::homePath());
+    auto fileName = QFileDialog::getOpenFileName(this, "Select file to upload.", QDir::homePath());
+    std::string postFile = fileName.toUtf8().constData();
+
+    std::string addr = API_ADDR + "/files/" + currentUser;
+    long returnCode = makePostFileCurlRequest(this, addr.c_str(), postFile.c_str());
     fillWorkSpace();
 }
 
@@ -46,7 +50,7 @@ void UserWorkspace::fillWorkSpace() {
 
     std::string readBuffer;
     std::string addr = API_ADDR + "/files/" + currentUser + "/list";
-    makeCurlRequest(addr.c_str(), &readBuffer, NULL);
+    makeCurlRequest(addr.c_str(), &readBuffer, NULL, 10);
 
     json resp;
     resp = json::parse(readBuffer);
@@ -55,8 +59,12 @@ void UserWorkspace::fillWorkSpace() {
         auto item = new QListWidgetItem();
         std::string fileName = file["fileName"].get<std::string>();
         std::string fileType = file["fileType"].get<std::string>();
-        std::string text = fileName + "." + fileType;
-        item->setText(splitStringByLength(fileName).c_str());
+        std::string text = fileName;
+        if (fileType != "") {
+            text += ".";
+            text += fileType;
+        }
+        item->setText(splitStringByLength(text).c_str());
         std::string iconLocation = getIcon(fileType);
         item->setIcon(QIcon(iconLocation.c_str()));
         ui->listWidget->addItem(item);
