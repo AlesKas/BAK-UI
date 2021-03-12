@@ -8,20 +8,22 @@ void initApiAddr() {
     std::string addr = addr1 + "/apistatus";
     std::string readBuffer;
     long httpCode;
-    httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL, 1);
-    if (httpCode != 200) {
-        addr = addr2 + "/apistatus";
-        httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL, 1);
-        if (httpCode != 200) {
-            showMessaggeBox("Cannot connect to server.", "Critical error", QMessageBox::Critical);
-            exit(-1);
-        } else {
-            API_ADDR = addr2;
-        }
-    } else {
+    httpCode = makeCurlRequest("GET", addr.c_str(), &readBuffer, NULL, 1);
+    if (httpCode == 200) {
         API_ADDR = addr1;
+    } else {
+        addr = addr2 + "/apistatus";
+        httpCode = makeCurlRequest("GET", addr.c_str(), &readBuffer, NULL, 1);
+        json resp = json::parse(readBuffer);
+        auto msg = resp["success"].get<bool>();
+        if (msg) {
+            API_ADDR = addr2;
+        } else {
+            QMessageBox::critical(NULL, "Critical error", "Cannot connect to server.");
+            exit(-1);
+        }
     }
-
+    std::cout << API_ADDR;
 }
 
 std::size_t callback(const char* in, std::size_t size, std::size_t num, std::string* out) {
@@ -30,7 +32,7 @@ std::size_t callback(const char* in, std::size_t size, std::size_t num, std::str
         return totalBytes;
     }
 
-long makeCurlRequest(const char* url, std::string *returnData, const char* postData, int timeout) {
+long makeCurlRequest(const char* method, const char* url, std::string *returnData, const char* postData, int timeout) {
     long returnCode;
     returnData->clear();
     CURL *curl = curl_easy_init();
@@ -48,13 +50,13 @@ long makeCurlRequest(const char* url, std::string *returnData, const char* postD
     // callback handling function).  Can be any pointer type, since it will
     // internally be passed as a void pointer.
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)returnData);
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, method);
     if (postData != NULL) {
         struct curl_slist *headers = NULL;
         headers = curl_slist_append(headers, "Accept: application/json");
         headers = curl_slist_append(headers, "Content-Type: application/json");
         headers = curl_slist_append(headers, "charset: utf-8");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData);
     }
 

@@ -4,6 +4,8 @@
 #include <mainwindow.h>
 #include <QListWidgetItem>
 #include <QFileDialog>
+#include <QBoxLayout>
+#include <QToolBar>
 
 extern std::string API_ADDR;
 
@@ -12,6 +14,7 @@ UserWorkspace::UserWorkspace(QWidget *parent, std::string user) :
     ui(new Ui::UserWorkspace)
 {
     currentUser = user;
+    path = "/";
     ui->setupUi(this);
 
     ui->listWidget->setFlow(QListView::LeftToRight);
@@ -22,6 +25,7 @@ UserWorkspace::UserWorkspace(QWidget *parent, std::string user) :
     connect(ui->actionLog_out, &QAction::triggered, this, &UserWorkspace::logOut);
     connect(ui->actionExit, SIGNAL(triggered()), this, SLOT(close()));
     connect(ui->actionUpload_4, &QAction::triggered, this, &UserWorkspace::uploadFile);
+    ui->toolBar->setMovable(false);
     fillWorkSpace();
 }
 
@@ -47,11 +51,12 @@ void UserWorkspace::logOut() {
 
 void UserWorkspace::fillWorkSpace() {
     ui->listWidget->clear();
-
+    json j;
+    j["directory"] = path;
     std::string readBuffer;
-    std::string addr = API_ADDR + "/files/" + currentUser + "/list";
-    makeCurlRequest(addr.c_str(), &readBuffer, NULL, 10);
 
+    std::string addr = API_ADDR + "/files/" + currentUser + "/list?directory=" + path;
+    makeCurlRequest("GET", addr.c_str(), &readBuffer, j.dump().c_str(), 10);
     json resp;
     resp = json::parse(readBuffer);
     auto files = resp["data"];
@@ -68,5 +73,25 @@ void UserWorkspace::fillWorkSpace() {
         std::string iconLocation = getIcon(fileType);
         item->setIcon(QIcon(iconLocation.c_str()));
         ui->listWidget->addItem(item);
+    }
+}
+
+void UserWorkspace::on_listWidget_itemDoubleClicked(QListWidgetItem *item) {
+    std::string itemName = item->text().toUtf8().constData();
+    auto index = itemName.rfind(".");
+    if (index != std::string::npos) {
+        std::cout << "FILE: " << itemName << std::endl;
+    } else {
+        pathStack.push(path);
+        path += itemName + "/";
+        fillWorkSpace();
+    }
+}
+
+void UserWorkspace::on_actioncd_triggered() {
+    if (!pathStack.empty()) {
+        path = pathStack.top();
+        pathStack.pop();
+        fillWorkSpace();
     }
 }

@@ -39,7 +39,7 @@ void MainWindow::on_btn_login_clicked()
     std::string readBuffer;
 
     std::string addr = API_ADDR + "/salt";
-    long httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL, 5);
+    long httpCode = makeCurlRequest("GET", addr.c_str(), &readBuffer, NULL, 5);
     if (httpCode != 200) {
         showMessaggeBox("Error while making API request", "Error", QMessageBox::Critical);
         return;
@@ -50,7 +50,7 @@ void MainWindow::on_btn_login_clicked()
     auto passwdHash = sha256(saltedPasswd);
 
     addr = API_ADDR + "/users/auth/" + userName.toUtf8().constData() + "/" + passwdHash;
-    httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL, 5);
+    httpCode = makeCurlRequest("GET", addr.c_str(), &readBuffer, NULL, 5);
     if (httpCode == 200) {
         auto userWorkspace = new UserWorkspace(nullptr, userName.toUtf8().constData());
         userWorkspace->show();

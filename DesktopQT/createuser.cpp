@@ -38,7 +38,7 @@ void CreateUser::on_buttonBox_accepted()
         std::string readBuffer;
 
         std::string addr = API_ADDR + "/salt";
-        long httpCode = makeCurlRequest(addr.c_str(), &readBuffer, NULL, 5);
+        long httpCode = makeCurlRequest("GET", addr.c_str(), &readBuffer, NULL, 5);
         if (httpCode != 200) {
             showMessaggeBox("Error while making API request", "Error", QMessageBox::Critical);
             return;
@@ -52,7 +52,7 @@ void CreateUser::on_buttonBox_accepted()
         j["password"] = passwdHash;
         addr = API_ADDR + "/users/create";
         readBuffer = "";
-        httpCode = makeCurlRequest(addr.c_str(), &readBuffer, j.dump().c_str(), 10);
+        httpCode = makeCurlRequest("PUT", addr.c_str(), &readBuffer, j.dump().c_str(), 10);
 
         if (httpCode == 204) {
             showMessaggeBox("User created successfully.", "Success", QMessageBox::Information);
@@ -65,13 +65,11 @@ void CreateUser::on_buttonBox_accepted()
     }
 }
 
-void CreateUser::on_buttonBox_rejected()
-{
+void CreateUser::on_buttonBox_rejected() {
     close();
 }
 
-void CreateUser::on_showPasswd_stateChanged(int arg1)
-{
+void CreateUser::on_showPasswd_stateChanged(int arg1) {
     auto checkBox = ui->showPasswd;
     if (checkBox->isChecked()) {
         ui->PasswdInput->setEchoMode(QLineEdit::Normal);

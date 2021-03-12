@@ -5,15 +5,9 @@
 #include <iostream>
 #include <curl/curl.h>
 #include <openssl/sha.h>
-#include "qmessagebox.h"
+#include <QMessageBox>
 #include <nlohmann/json.hpp>
-#include <stdio.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <qprogressdialog.h>
-#include <qprocess.h>
-#include <qfuture.h>
-#include <QThread>
 #include <userworkspace.h>
 
 #define MINIMAL_PROGRESS_FUNCTIONALITY_INTERVAL     30000
@@ -34,5 +28,5 @@ std::string splitStringByLength(std::string input);
 long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* postData);
 void showMessaggeBox(const char* message, const char* title, QMessageBox::Icon icon);
 std::size_t callback(const char* in, std::size_t size, std::size_t num, std::string* out);
-long makeCurlRequest(const char* url, std::string* returnData, const char* postData, int timeout);
+long makeCurlRequest(const char* method, const char* url, std::string* returnData, const char* postData, int timeout);
 #endif // UTILS_H
