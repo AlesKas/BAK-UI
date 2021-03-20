@@ -23,7 +23,6 @@ void initApiAddr() {
             exit(-1);
         }
     }
-    std::cout << API_ADDR;
 }
 
 std::size_t callback(const char* in, std::size_t size, std::size_t num, std::string* out) {
@@ -38,17 +37,10 @@ long makeCurlRequest(const char* method, const char* url, std::string *returnDat
     CURL *curl = curl_easy_init();
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
-
-    // Don't bother trying IPv6, which would increase DNS resolution time.
     curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-
-    // Don't wait forever, time out after 5 seconds.
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
-
-    // Hook up data container (will be passed as the last parameter to the
-    // callback handling function).  Can be any pointer type, since it will
-    // internally be passed as a void pointer.
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)returnData);
     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, method);
     if (postData != NULL) {
@@ -61,7 +53,6 @@ long makeCurlRequest(const char* method, const char* url, std::string *returnDat
     }
 
     curl_easy_perform(curl);
-    // Run our HTTP GET command, capture the HTTP response code, and clean up.
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &returnCode);
     curl_easy_cleanup(curl);
 
@@ -110,44 +101,4 @@ std::string getIcon(std::string fileType) {
     } else {
         return ":/icons/img/document.png";
     }
-}
-
-long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* postData) {
-    long returnCode;
-    CURL *curl;
-    struct stat stats;
-    stat(postData, &stats);
-
-    struct curl_httppost *formpost = NULL;
-    struct curl_httppost *lastptr = NULL;
-    struct curl_slist *headerlist = NULL;
-    static const char buf[] =  "Expect:";
-
-    curl_global_init(CURL_GLOBAL_ALL);
-
-    curl_formadd(&formpost,
-                 &lastptr,
-                 CURLFORM_COPYNAME, "fileName",
-                 CURLFORM_FILE, postData,
-                 CURLFORM_END);
-
-    curl = curl_easy_init();
-
-    headerlist = curl_slist_append(headerlist, buf);
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-
-    curl_easy_setopt(curl, CURLOPT_HTTPPOST, formpost);
-    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
-    curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, stats.st_size);
-    curl_easy_setopt (curl, CURLOPT_VERBOSE, 0L);
-    uw->setCursor(Qt::BusyCursor);
-    curl_easy_perform(curl);
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &returnCode);
-
-    curl_easy_cleanup(curl);
-    curl_formfree(formpost);
-    curl_slist_free_all(headerlist);
-
-    uw->setCursor(Qt::ArrowCursor);
-    return returnCode;
 }

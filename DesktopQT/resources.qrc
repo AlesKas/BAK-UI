@@ -3,6 +3,7 @@
         <file>img/image.png</file>
         <file>img/directory.png</file>
         <file>img/document.png</file>
-        <file>img/folder.png</file>
+        <file>img/iconfinder_icon-home_211676.png</file>
+        <file>img/dir-up.png</file>
     </qresource>
 </RCC>

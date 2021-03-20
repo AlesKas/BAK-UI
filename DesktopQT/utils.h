@@ -7,10 +7,6 @@
 #include <openssl/sha.h>
 #include <QMessageBox>
 #include <nlohmann/json.hpp>
-#include <sys/stat.h>
-#include <userworkspace.h>
-
-#define MINIMAL_PROGRESS_FUNCTIONALITY_INTERVAL     30000
 
 using json = nlohmann::json;
 
@@ -25,7 +21,6 @@ std::string to_hex(unsigned char ch);
 std::string sha256(std::string line);
 std::string getIcon(std::string fileType);
 std::string splitStringByLength(std::string input);
-long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* postData);
 void showMessaggeBox(const char* message, const char* title, QMessageBox::Icon icon);
 std::size_t callback(const char* in, std::size_t size, std::size_t num, std::string* out);
 long makeCurlRequest(const char* method, const char* url, std::string* returnData, const char* postData, int timeout);

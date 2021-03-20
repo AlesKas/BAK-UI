@@ -1,9 +1,10 @@
-QT       += core gui \
-            concurrent
+QT       += core gui
+
+QMAKE_CXXFLAGS += -std=c++17
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += c++11
+CONFIG += c++17
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -11,6 +12,8 @@ CONFIG += c++11
 
 SOURCES += \
     createuser.cpp \
+    files.cpp \
+    listwidgetdialog.cpp \
     main.cpp \
     mainwindow.cpp \
     userworkspace.cpp \
@@ -18,12 +21,15 @@ SOURCES += \
 
 HEADERS += \
     createuser.h \
+    files.h \
+    listwidgetdialog.h \
     mainwindow.h \
     userworkspace.h \
     utils.h
 
 FORMS += \
     createuser.ui \
+    listwidgetdialog.ui \
     mainwindow.ui \
     userworkspace.ui
 
