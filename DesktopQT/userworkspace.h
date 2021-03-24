@@ -34,18 +34,23 @@ private slots:
     void uploadFile();
     void on_tabWidget_currentChanged(int index);
 
+    void on_shareWidget_itemDoubleClicked(QListWidgetItem *item);
+
 private:
     std::string currentUser;
     Ui::UserWorkspace *ui;
     std::string path;
     std::stack<std::string> pathStack;
     QLabel* pathLabel;
+    std::string sharedWorkspace;
+    std::stack<std::string> shareStack;
 
     void logOut();
     void exit();
-    void fillWorkSpace();
+    void fillWorkSpace(QListWidget *target, std::string user);
     void fillShared();
     void updatePath();
+    void fillWidget(QListWidget *target, std::string jsonData);
 
 };
 

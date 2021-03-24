@@ -40,7 +40,6 @@ UserWorkspace::UserWorkspace(QWidget *parent, std::string user) :
     pathLabel = new QLabel(this);
     updatePath();
     ui->toolBar->addWidget(pathLabel);
-    fillWorkSpace();
 }
 
 UserWorkspace::~UserWorkspace() {
@@ -68,7 +67,7 @@ void UserWorkspace::deleteItem() {
         std::string addr = API_ADDR + "/file/" + currentUser + "?fileName=" + path;
         long returnCode = deleteCurlRequest(this, addr, fileName);
         delete item;
-        fillWorkSpace();
+        fillWorkSpace(ui->listWidget, currentUser);
     }
 }
 
@@ -78,7 +77,7 @@ void UserWorkspace::uploadFile() {
     if (postFile != "") {
         std::string addr = API_ADDR + "/files/" + currentUser + "?directory=" + path;
         long returnCode = makePostFileCurlRequest(this, addr.c_str(), postFile.c_str());
-        fillWorkSpace();
+        fillWorkSpace(ui->listWidget, currentUser);
     }
 }
 
@@ -88,29 +87,20 @@ void UserWorkspace::logOut() {
     mainWindow->show();
 }
 
-void UserWorkspace::fillWorkSpace() {
-    ui->listWidget->clear();
+void UserWorkspace::fillWorkSpace(QListWidget *target, std::string user) {
+    target->clear();
     json j;
     j["directory"] = path;
     std::string readBuffer;
+    std::string addr;
 
-    std::string addr = API_ADDR + "/files/" + currentUser + "/list?directory=" + path;
-    makeCurlRequest("GET", addr.c_str(), &readBuffer, j.dump().c_str(), 10);
-    json resp = json::parse(readBuffer);
-    for (auto file : resp["data"]) {
-        auto item = new QListWidgetItem();
-        std::string fileName = file["fileName"].get<std::string>();
-        std::string fileType = file["fileType"].get<std::string>();
-        std::string text = fileName;
-        if (fileType != "") {
-            text += ".";
-            text += fileType;
-        }
-        item->setText(splitStringByLength(text).c_str());
-        std::string iconLocation = getIcon(fileType);
-        item->setIcon(QIcon(iconLocation.c_str()));
-        ui->listWidget->addItem(item);
+    if (sharedWorkspace != "") {
+        addr = API_ADDR + "/files/" + user + "/list?directory=" + path + "&toUser=" + currentUser;
+    } else {
+        addr = API_ADDR + "/files/" + user + "/list?directory=" + path + "&toUser=";
     }
+    makeCurlRequest("GET", addr.c_str(), &readBuffer, j.dump().c_str(), 10);
+    fillWidget(target, readBuffer);
 }
 
 void UserWorkspace::on_listWidget_itemDoubleClicked(QListWidgetItem *item) {
@@ -118,22 +108,43 @@ void UserWorkspace::on_listWidget_itemDoubleClicked(QListWidgetItem *item) {
     auto index = itemName.rfind(".");
     if (index != std::string::npos) {
         itemName.erase(std::remove(itemName.begin(), itemName.end(), '\n'), itemName.end());
-        std::string addr = API_ADDR + "/files/download?user=" + currentUser + "&directory=" + path + "&fileName=";
+        std::string addr = API_ADDR + "/files/download?user=" + currentUser + "&directory=" + path + "&toUser=&fileName=";
         downloadAndOpen(this, addr, path, itemName);
     } else {
         pathStack.push(path);
         path += itemName + "/";
-        fillWorkSpace();
+        fillWorkSpace(ui->listWidget, currentUser);
         updatePath();
     }
 }
 
 void UserWorkspace::on_actioncd_triggered() {
-    if (!pathStack.empty()) {
-        path = pathStack.top();
-        pathStack.pop();
-        fillWorkSpace();
-        updatePath();
+    if (ui->tabWidget->currentIndex() == 0) {
+        if (!pathStack.empty()) {
+            path = pathStack.top();
+            pathStack.pop();
+            fillWorkSpace(ui->listWidget, currentUser);
+            updatePath();
+        }
+    } else {
+        if (!shareStack.empty()) {
+            path = shareStack.top();
+            shareStack.pop();
+            if (path == "/") {
+                updatePath();
+                shareStack = std::stack<std::string>();
+                std::string readBuffer;
+                std::string addr = API_ADDR + "/share/" + currentUser + "/list";
+                makeCurlRequest("GET", addr.c_str(), &readBuffer, NULL, 10);
+                fillWidget(ui->shareWidget, readBuffer);
+            } else {
+                fillWorkSpace(ui->listWidget, sharedWorkspace);
+                updatePath();
+            }
+        } else {
+            sharedWorkspace = "";
+            fillShared();
+        }
     }
 }
 
@@ -142,11 +153,21 @@ void UserWorkspace::updatePath() {
 }
 
 void UserWorkspace::on_actionHome_triggered() {
-    path = "/";
-    pathStack = std::stack<std::string>();
-    pathStack.push(path);
-    fillWorkSpace();
-    updatePath();
+    //if (ui->tabWidget->)
+    if (ui->tabWidget->currentIndex() == 0) {
+        path = "/";
+        pathStack = std::stack<std::string>();
+        pathStack.push(path);
+        fillWorkSpace(ui->listWidget, currentUser);
+        updatePath();
+    } else {
+        path = "/";
+        shareStack = std::stack<std::string>();
+        shareStack.push(path);
+        fillShared();
+        sharedWorkspace = "";
+        updatePath();
+    }
 }
 
 void UserWorkspace::createFolder() {
@@ -157,7 +178,7 @@ void UserWorkspace::createFolder() {
         std::string addr = API_ADDR + "/files/folder/" + currentUser + "?directory=" + path + "&folderName=" + folderName.toUtf8().constData();
         std::string returnData;
         makeCurlRequest("PUT", addr.c_str(), &returnData, NULL, 10);
-        fillWorkSpace();
+        fillWorkSpace(ui->listWidget, currentUser);
     } else if (ok && folderName.isEmpty()) {
         showMessaggeBox("Please enter name.", "Error", QMessageBox::Warning);
         createFolder();
@@ -188,18 +209,83 @@ void UserWorkspace::shareItem() {
                 makeCurlRequest("PUT", addr.c_str(), &readBuffer, NULL, 10);
             }
         }
-        fillWorkSpace();
+        fillWorkSpace(ui->listWidget, currentUser);
     }
 }
 
 void UserWorkspace::on_tabWidget_currentChanged(int index) {
     if (index == 0) {
-        fillWorkSpace();
+        ui->shareWidget->clear();
+        fillWorkSpace(ui->listWidget, currentUser);
+        sharedWorkspace = "";
     } else {
+        ui->listWidget->clear();
+        path = "/";
+        pathStack = std::stack<std::string>();
+        pathStack.push(path);
+        updatePath();
         fillShared();
     }
 }
 
 void UserWorkspace::fillShared() {
+    ui->shareWidget->clear();
+    std::string addr = API_ADDR + "/share/" + currentUser + "/shared";
+    std::string readBuffer;
+    makeCurlRequest("GET", addr.c_str(), &readBuffer, NULL, 10);
 
+    json resp = json::parse(readBuffer);
+    for (auto user : resp["data"]) {
+        std::string userName = user.get<std::string>();
+        auto item = new QListWidgetItem();
+        item->setText(splitStringByLength(userName).c_str());
+        std::string iconLocation = ":/icons/img/directory.png";
+        item->setIcon(QIcon(iconLocation.c_str()));
+        ui->shareWidget->addItem(item);
+    }
+}
+
+void UserWorkspace::on_shareWidget_itemDoubleClicked(QListWidgetItem *item) {
+    if (sharedWorkspace == "") {
+        sharedWorkspace = item->text().toUtf8().constData();
+        std::string readBuffer;
+        std::string addr = API_ADDR + "/share/" + currentUser + "/list";
+        makeCurlRequest("GET", addr.c_str(), &readBuffer, NULL, 10);
+        fillWidget(ui->shareWidget, readBuffer);
+        shareStack.push("/");
+    } else {
+        std::string itemName = item->text().toUtf8().constData();
+        auto index = itemName.rfind(".");
+        if (index != std::string::npos) {
+            itemName.erase(std::remove(itemName.begin(), itemName.end(), '\n'), itemName.end());
+            std::string addr = API_ADDR + "/files/download?user=" + sharedWorkspace + "&directory=" + path + "&toUser=" + currentUser + "&fileName=";
+            downloadAndOpen(this, addr, path, itemName);
+        } else {
+            shareStack.push(path);
+            path += itemName + "/";
+            std::string readBuffer;
+            fillWorkSpace(ui->shareWidget, sharedWorkspace);
+            updatePath();
+        }
+    }
+
+}
+
+void UserWorkspace::fillWidget(QListWidget *target, std::string jsonData) {
+    target->clear();
+    json resp = json::parse(jsonData);
+    for (auto file : resp["data"]) {
+        auto item = new QListWidgetItem();
+        std::string fileName = file["fileName"].get<std::string>();
+        std::string fileType = file["fileType"].get<std::string>();
+        std::string text = fileName;
+        if (fileType != "") {
+            text += ".";
+            text += fileType;
+        }
+        item->setText(splitStringByLength(text).c_str());
+        std::string iconLocation = getIcon(fileType);
+        item->setIcon(QIcon(iconLocation.c_str()));
+        target->addItem(item);
+    }
 }
