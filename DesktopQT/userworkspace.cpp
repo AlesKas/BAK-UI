@@ -3,6 +3,8 @@
 #include "listwidgetdialog.h"
 #include "utils.h"
 #include "files.h"
+#include <QMimeData>
+#include <QDragEnterEvent>
 
 extern std::string API_ADDR;
 
@@ -13,12 +15,13 @@ UserWorkspace::UserWorkspace(QWidget *parent, std::string user) :
     currentUser = user;
     path = "/";
     ui->setupUi(this);
-
+    this->setAcceptDrops(true);
     ui->listWidget->setFlow(QListView::LeftToRight);
     ui->listWidget->setResizeMode(QListView::Adjust);
     ui->listWidget->setGridSize(QSize(128,128));
     ui->listWidget->setMovement(QListView::Static);
     ui->listWidget->setViewMode(QListView::IconMode);
+    ui->listWidget->setAcceptDrops(true);
 
     ui->shareWidget->setFlow(QListView::LeftToRight);
     ui->shareWidget->setResizeMode(QListView::Adjust);
@@ -40,6 +43,7 @@ UserWorkspace::UserWorkspace(QWidget *parent, std::string user) :
     pathLabel = new QLabel(this);
     updatePath();
     ui->toolBar->addWidget(pathLabel);
+    fillWorkSpace(ui->listWidget, currentUser);
 }
 
 UserWorkspace::~UserWorkspace() {
@@ -287,5 +291,25 @@ void UserWorkspace::fillWidget(QListWidget *target, std::string jsonData) {
         std::string iconLocation = getIcon(fileType);
         item->setIcon(QIcon(iconLocation.c_str()));
         target->addItem(item);
+    }
+}
+
+void UserWorkspace::dropEvent(QDropEvent* event) {
+    if (ui->tabWidget->currentIndex() == 0) {
+        foreach(QUrl url, event->mimeData()->urls())
+        {
+            std::string filename = url.toLocalFile().toUtf8().constData();
+            std::string addr = API_ADDR + "/files/" + currentUser + "?directory=" + path;
+            makePostFileCurlRequest(this, addr.c_str(), filename.c_str());
+            fillWorkSpace(ui->listWidget, currentUser);
+        }
+    } else {
+        showMessaggeBox("Cannot drop to share tab.", "Warning", QMessageBox::Warning);
+    }
+}
+
+void UserWorkspace::dragEnterEvent(QDragEnterEvent *e) {
+    if (e->mimeData()->hasUrls()) {
+        e->acceptProposedAction();
     }
 }

@@ -33,7 +33,8 @@ private slots:
     void showContextMenu(const QPoint&);
     void uploadFile();
     void on_tabWidget_currentChanged(int index);
-
+    void dropEvent(QDropEvent* event);
+    void dragEnterEvent(QDragEnterEvent *e);
     void on_shareWidget_itemDoubleClicked(QListWidgetItem *item);
 
 private:
