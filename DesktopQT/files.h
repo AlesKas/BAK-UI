@@ -21,8 +21,8 @@
 
 void cleanUp();
 void setUpDirs();
-long deleteCurlRequest(UserWorkspace* uw, std::string url, std::string fileName);
-long downloadAndOpen(UserWorkspace* uw, std::string url, std::string path, std::string fileName);
-long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* postData);
+long deleteCurlRequest(UserWorkspace* uw, std::string url, std::string fileName, std::string* returnData);
+long downloadAndOpen(UserWorkspace* uw, std::string url, std::string path, std::string fileName, std::string* returnData);
+long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* postData, std::string* returnData);
 
 #endif // FILES_H

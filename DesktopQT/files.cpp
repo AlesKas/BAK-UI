@@ -1,4 +1,5 @@
 #include "files.h"
+#include "utils.h"
 
 std::string APP_DIRECTORY;
 
@@ -16,9 +17,15 @@ void cleanUp() {
     std::uintmax_t n = std::filesystem::remove_all(APP_DIRECTORY);
 }
 
-long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* postData) {
+size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) {
+    size_t written = fwrite(ptr, size, nmemb, stream);
+    return written;
+}
+
+long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* postData, std::string* returnData) {
     long returnCode;
     CURL *curl;
+    returnData->clear();
     struct stat stats;
     stat(postData, &stats);
 
@@ -40,6 +47,8 @@ long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* pos
     headerlist = curl_slist_append(headerlist, buf);
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)returnData);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
     curl_easy_setopt(curl, CURLOPT_HTTPPOST, formpost);
     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
     curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, stats.st_size);
@@ -56,16 +65,12 @@ long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* pos
     return returnCode;
 }
 
-size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-    size_t written = fwrite(ptr, size, nmemb, stream);
-    return written;
-}
-
-long downloadAndOpen(UserWorkspace* uw, std::string url, std::string path, std::string fileName) {
+long downloadAndOpen(UserWorkspace* uw, std::string url, std::string path, std::string fileName, std::string* returnData) {
     long returnCode = 200;
     CURL *curl;
     FILE *fp;
     CURLcode res;
+    returnData->clear();
     std::string filePathName = path + fileName;
 
     struct stat buffer;
@@ -102,10 +107,11 @@ long downloadAndOpen(UserWorkspace* uw, std::string url, std::string path, std::
     return returnCode;
 }
 
-long deleteCurlRequest(UserWorkspace* uw, std::string url, std::string fileName) {
+long deleteCurlRequest(UserWorkspace* uw, std::string url, std::string fileName, std::string* returnData) {
     long returnCode;
     CURL *curl;
     CURLcode res;
+    returnData->clear();
 
     curl = curl_easy_init();
     auto escaped = curl_easy_escape(curl, fileName.c_str(), 0);
@@ -113,7 +119,8 @@ long deleteCurlRequest(UserWorkspace* uw, std::string url, std::string fileName)
 
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)returnData);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
     uw->setCursor(Qt::BusyCursor);
     res = curl_easy_perform(curl);

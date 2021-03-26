@@ -5,8 +5,10 @@
 #include "files.h"
 #include <QMimeData>
 #include <QDragEnterEvent>
+#include <fstream>
 
 extern std::string API_ADDR;
+extern std::string APP_DIRECTORY;
 
 UserWorkspace::UserWorkspace(QWidget *parent, std::string user) :
     QMainWindow(parent),
@@ -67,22 +69,46 @@ void UserWorkspace::deleteItem() {
     for (int i = 0; i < ui->listWidget->selectedItems().size(); i++) {
         QListWidgetItem *item = ui->listWidget->takeItem(ui->listWidget->currentRow());
         std::string fileName = item->text().toUtf8().constData();
+        std::string readBuffer;
         fileName.erase(std::remove(fileName.begin(), fileName.end(), '\n'), fileName.end());
         std::string addr = API_ADDR + "/file/" + currentUser + "?fileName=" + path;
-        long returnCode = deleteCurlRequest(this, addr, fileName);
+        long returnCode = deleteCurlRequest(this, addr, fileName, &readBuffer);
+        if (returnCode != 200) {
+            json resp = json::parse(readBuffer);
+            std::string msg = resp["error"]["error"].get<std::string>();
+            showMessaggeBox(msg.c_str(), "Error", QMessageBox::Critical);
+        }
         delete item;
         fillWorkSpace(ui->listWidget, currentUser);
     }
 }
 
 void UserWorkspace::uploadFile() {
-    auto fileName = QFileDialog::getOpenFileName(this, "Select file to upload.", QDir::homePath());
-    std::string postFile = fileName.toUtf8().constData();
-    if (postFile != "") {
-        std::string addr = API_ADDR + "/files/" + currentUser + "?directory=" + path;
-        long returnCode = makePostFileCurlRequest(this, addr.c_str(), postFile.c_str());
-        fillWorkSpace(ui->listWidget, currentUser);
+    QFileDialog dialog(this);
+    dialog.setDirectory(QDir::homePath());
+    dialog.setFileMode(QFileDialog::ExistingFiles);
+    dialog.setWindowTitle("Select file to upload.");
+    //auto fileName = QFileDialog::getOpenFileName(this, "Select file to upload.", QDir::homePath(), QFileDialog::ExistingFiles);
+    if (dialog.exec()) {
+        QStringList fileNames = dialog.selectedFiles();
+        for (auto file : fileNames) {
+            std::string fileName = file.toUtf8().constData();
+            std::size_t found = fileName.find(".");
+            if (found == std::string::npos) {
+                showMessaggeBox("Cannot upload files without extension.", "Error", QMessageBox::Critical);
+                continue;
+            }
+            std::string readBuffer;
+            std::string addr = API_ADDR + "/files/" + currentUser + "?directory=" + path;
+            long returnCode = makePostFileCurlRequest(this, addr.c_str(), fileName.c_str(), &readBuffer);
+            if (returnCode != 200) {
+                json resp = json::parse(readBuffer);
+                std::string msg = resp["error"]["error"].get<std::string>();
+                showMessaggeBox(msg.c_str(), "Error", QMessageBox::Critical);
+            }
+        }
     }
+    fillWorkSpace(ui->listWidget, currentUser);
 }
 
 void UserWorkspace::logOut() {
@@ -108,12 +134,20 @@ void UserWorkspace::fillWorkSpace(QListWidget *target, std::string user) {
 }
 
 void UserWorkspace::on_listWidget_itemDoubleClicked(QListWidgetItem *item) {
+    auto name = item->icon().name();
+    std::cout << item->icon().name().toUtf8().constData() << std::endl;
     std::string itemName = item->text().toUtf8().constData();
     auto index = itemName.rfind(".");
     if (index != std::string::npos) {
+        std::string readBuffer;
         itemName.erase(std::remove(itemName.begin(), itemName.end(), '\n'), itemName.end());
         std::string addr = API_ADDR + "/files/download?user=" + currentUser + "&directory=" + path + "&toUser=&fileName=";
-        downloadAndOpen(this, addr, path, itemName);
+        long returnCode = downloadAndOpen(this, addr, path, itemName, &readBuffer);
+        if (returnCode != 200) {
+            json resp = json::parse(readBuffer);
+            std::string msg = resp["error"]["error"].get<std::string>();
+            showMessaggeBox(msg.c_str(), "Error", QMessageBox::Critical);
+        }
     } else {
         pathStack.push(path);
         path += itemName + "/";
@@ -142,8 +176,8 @@ void UserWorkspace::on_actioncd_triggered() {
                 makeCurlRequest("GET", addr.c_str(), &readBuffer, NULL, 10);
                 fillWidget(ui->shareWidget, readBuffer);
             } else {
-                fillWorkSpace(ui->listWidget, sharedWorkspace);
                 updatePath();
+                fillWorkSpace(ui->shareWidget, sharedWorkspace);
             }
         } else {
             sharedWorkspace = "";
@@ -157,7 +191,6 @@ void UserWorkspace::updatePath() {
 }
 
 void UserWorkspace::on_actionHome_triggered() {
-    //if (ui->tabWidget->)
     if (ui->tabWidget->currentIndex() == 0) {
         path = "/";
         pathStack = std::stack<std::string>();
@@ -261,13 +294,19 @@ void UserWorkspace::on_shareWidget_itemDoubleClicked(QListWidgetItem *item) {
         std::string itemName = item->text().toUtf8().constData();
         auto index = itemName.rfind(".");
         if (index != std::string::npos) {
+            std::string readBuffer;
             itemName.erase(std::remove(itemName.begin(), itemName.end(), '\n'), itemName.end());
             std::string addr = API_ADDR + "/files/download?user=" + sharedWorkspace + "&directory=" + path + "&toUser=" + currentUser + "&fileName=";
-            downloadAndOpen(this, addr, path, itemName);
+            long returnCode = downloadAndOpen(this, addr, path, itemName, &readBuffer);
+            std::cout << returnCode;
+            if (returnCode != 200) {
+                json resp = json::parse(readBuffer);
+                std::string msg = resp["error"]["error"].get<std::string>();
+                showMessaggeBox(msg.c_str(), "Error", QMessageBox::Critical);
+            }
         } else {
             shareStack.push(path);
             path += itemName + "/";
-            std::string readBuffer;
             fillWorkSpace(ui->shareWidget, sharedWorkspace);
             updatePath();
         }
@@ -282,15 +321,22 @@ void UserWorkspace::fillWidget(QListWidget *target, std::string jsonData) {
         auto item = new QListWidgetItem();
         std::string fileName = file["fileName"].get<std::string>();
         std::string fileType = file["fileType"].get<std::string>();
+        bool isDir = file["isDir"].get<bool>();
         std::string text = fileName;
-        if (fileType != "") {
-            text += ".";
-            text += fileType;
-        }
-        item->setText(splitStringByLength(text).c_str());
-        std::string iconLocation = getIcon(fileType);
-        item->setIcon(QIcon(iconLocation.c_str()));
-        target->addItem(item);
+        if (!isDir) {
+            std::string iconLocation = getIcon(fileType);
+            item->setIcon(QIcon(iconLocation.c_str()));
+            if (fileType != "") {
+                text += "." + fileType;
+            }
+            item->setText(splitStringByLength(text).c_str());
+            target->addItem(item);
+        } else {
+            item->setIcon(QIcon(":/icons/img/directory.png"));
+            item->setText(splitStringByLength(text).c_str());
+            target->addItem(item);
+}
+
     }
 }
 
@@ -298,9 +344,15 @@ void UserWorkspace::dropEvent(QDropEvent* event) {
     if (ui->tabWidget->currentIndex() == 0) {
         foreach(QUrl url, event->mimeData()->urls())
         {
+            std::string readBuffer;
             std::string filename = url.toLocalFile().toUtf8().constData();
             std::string addr = API_ADDR + "/files/" + currentUser + "?directory=" + path;
-            makePostFileCurlRequest(this, addr.c_str(), filename.c_str());
+            long returnCode = makePostFileCurlRequest(this, addr.c_str(), filename.c_str(), &readBuffer);
+            if (returnCode != 200) {
+                json resp = json::parse(readBuffer);
+                std::string msg = resp["error"]["error"].get<std::string>();
+                showMessaggeBox(msg.c_str(), "Error", QMessageBox::Critical);
+            }
             fillWorkSpace(ui->listWidget, currentUser);
         }
     } else {

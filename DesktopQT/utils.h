@@ -13,7 +13,15 @@ using json = nlohmann::json;
 const std::map<std::string, std::string> iconPaths {
     {"png", ":/icons/img/image.png"},
     {"jpg", ":/icons/img/image.png"},
-    {"", ":/icons/img/directory.png"},
+    {"jpeg", ":/icons/img/image.png"},
+    {"jpx", ":/icons/img/image.png"},
+    {"gif", ":/icons/img/image.png"},
+    {"mp4", ":/icons/img/video-player.png"},
+    {"m4v", ":/icons/img/video-player.png"},
+    {"mkv", ":/icons/img/video-player.png"},
+    {"webm", ":/icons/img/video-player.png"},
+    {"mov", ":/icons/img/video-player.png"},
+    {"avi", ":/icons/img/video-player.png"},
 };
 
 void initApiAddr();
