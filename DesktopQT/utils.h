@@ -7,6 +7,7 @@
 #include <openssl/sha.h>
 #include <QMessageBox>
 #include <nlohmann/json.hpp>
+#include <QSettings>
 
 using json = nlohmann::json;
 

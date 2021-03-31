@@ -36,6 +36,7 @@ private slots:
     void dropEvent(QDropEvent* event);
     void dragEnterEvent(QDragEnterEvent *e);
     void on_shareWidget_itemDoubleClicked(QListWidgetItem *item);
+    void cleanAndExit();
 
 private:
     std::string currentUser;

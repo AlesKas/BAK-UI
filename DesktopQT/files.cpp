@@ -3,18 +3,65 @@
 
 std::string APP_DIRECTORY;
 
-void setUpDirs() {
+void remove_dir(const char *path)
+{
+        struct dirent *entry = NULL;
+        DIR *dir = NULL;
+        dir = opendir(path);
+        while(entry = readdir(dir))
+        {
+                DIR *sub_dir = NULL;
+                FILE *file = NULL;
+                char abs_path[100] = {0};
+                if(*(entry->d_name) != '.')
+                {
+                        sprintf(abs_path, "%s/%s", path, entry->d_name);
+                        if(sub_dir = opendir(abs_path))
+                        {
+                                closedir(sub_dir);
+                                remove_dir(abs_path);
+                        }
+                        else
+                        {
+                                if(file = fopen(abs_path, "r"))
+                                {
+                                        fclose(file);
+                                        remove(abs_path);
+                                }
+                        }
+                }
+        }
+        remove(path);
+}
 
+void setUpDirs() {
+#if defined(WIN32) || defined (WIN64)
+    std::string tmp = tmpPath + "\\" + std::string("BAK.XXXXXX");
+    if (CreateDirectoryA(tmp.c_str(), NULL) || ERROR_ALREADY_EXISTS == GetLastError()) {
+        remove_dir(tmp.c_str());
+    }
+    CreateDirectoryA(tmp.c_str(), NULL);
+    APP_DIRECTORY = tmp;
+#endif
+
+#ifdef linux
     std::string tmp = tmpPath + std::string("BAK.XXXXXX");
-    char *tmpChar = &tmp[0];
     char *tmp_dirname = mkdtemp(tmpChar);
     if (tmp_dirname != NULL) {
         APP_DIRECTORY = tmp_dirname;
     }
+#endif
+
 }
 
 void cleanUp() {
+#if defined(WIN32) || defined (WIN64)
+    remove_dir(APP_DIRECTORY.c_str());
+    RemoveDirectoryA(APP_DIRECTORY.c_str());
+#endif
+#ifdef linux
     std::uintmax_t n = std::filesystem::remove_all(APP_DIRECTORY);
+#endif
 }
 
 size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *stream) {
@@ -34,6 +81,7 @@ long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* pos
     struct curl_slist *headerlist = NULL;
     static const char buf[] =  "Expect:";
 
+    curl_global_init(CURL_GLOBAL_ALL);
     curl_global_init(CURL_GLOBAL_ALL);
 
     curl_formadd(&formpost,
@@ -97,6 +145,11 @@ long downloadAndOpen(UserWorkspace* uw, std::string url, std::string path, std::
         curl_easy_cleanup(curl);
         fclose(fp);
     }
+#if defined(WIN32) || defined (WIN64)
+    ShellExecuteA(0, 0, output.c_str(), 0, 0, SW_SHOW);
+#endif
+#ifdef linux
+
     if (res == CURLE_OK || fileExists) {
         pid_t pid = fork();
         if (pid == 0) {
@@ -104,6 +157,7 @@ long downloadAndOpen(UserWorkspace* uw, std::string url, std::string path, std::
         }
         uw->setCursor(Qt::ArrowCursor);
     }
+#endif
     return returnCode;
 }
 

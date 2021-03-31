@@ -7,16 +7,18 @@
 #include <string>
 #include <userworkspace.h>
 #include <iostream>
-#include <sys/wait.h>
-#include <filesystem>
 #include <wchar.h>
 
-#ifdef _WIN32
-    const std::string tmpPath = getenv("TMPDIR");
+#if defined(WIN32) || defined (WIN64)
+    const std::string tmpPath = getenv("TMP");
+    #include <windows.h>
+    #include <dirent.h>
 #endif
 #ifdef linux
     const std::string tmpPath = "/tmp/";
     #include <unistd.h>
+    #include <sys/wait.h>
+    #include <filesystem>
 #endif
 
 void cleanUp();

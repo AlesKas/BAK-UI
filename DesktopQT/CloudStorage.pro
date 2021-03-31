@@ -4,7 +4,8 @@ QMAKE_CXXFLAGS += -std=c++17
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += c++17
+CONFIG += c++17 \
+    config
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -29,6 +30,7 @@ HEADERS += \
 
 FORMS += \
     createuser.ui \
+    dialog.ui \
     listwidgetdialog.ui \
     mainwindow.ui \
     userworkspace.ui
@@ -45,3 +47,9 @@ unix: PKGCONFIG += openssl
 
 RESOURCES += \
     resources.qrc
+
+win32: INCLUDEPATH += $$PWD/../../../include
+win32: DEPENDPATH += $$PWD/../../../include
+win32: LIBS += -L$$PWD/../../../lib/ -lcurl
+win32: LIBS += -L$$PWD/../../../lib/ -lcrypto
+win32: LIBS += -L$$PWD/../../../lib/ -lssl

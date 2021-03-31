@@ -14,6 +14,7 @@ UserWorkspace::UserWorkspace(QWidget *parent, std::string user) :
     QMainWindow(parent),
     ui(new Ui::UserWorkspace)
 {
+    setUpDirs();
     currentUser = user;
     path = "/";
     ui->setupUi(this);
@@ -39,7 +40,7 @@ UserWorkspace::UserWorkspace(QWidget *parent, std::string user) :
     connect(ui->listWidget, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(showContextMenu(const QPoint&)));
 
     connect(ui->actionLog_out, &QAction::triggered, this, &UserWorkspace::logOut);
-    connect(ui->actionExit, SIGNAL(triggered()), this, SLOT(close()));
+    connect(ui->actionExit, &QAction::triggered, this, &UserWorkspace::cleanAndExit);
     connect(ui->actionUpload_4, &QAction::triggered, this, &UserWorkspace::uploadFile);
     ui->toolBar->setMovable(false);
     pathLabel = new QLabel(this);
@@ -112,6 +113,7 @@ void UserWorkspace::uploadFile() {
 }
 
 void UserWorkspace::logOut() {
+    cleanUp();
     close();
     auto mainWindow = new MainWindow();
     mainWindow->show();
@@ -364,4 +366,9 @@ void UserWorkspace::dragEnterEvent(QDragEnterEvent *e) {
     if (e->mimeData()->hasUrls()) {
         e->acceptProposedAction();
     }
+}
+
+void UserWorkspace::cleanAndExit() {
+    cleanUp();
+    close();
 }

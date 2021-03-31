@@ -2,9 +2,26 @@
 
 std::string API_ADDR;
 
+std::string readConfig(std::string tag) {
+    QSettings settings("qt.ini", QSettings::IniFormat);
+    settings.beginGroup("API");
+    std::string value =  settings.value(tag.c_str()).toString().toUtf8().constData();
+    settings.endGroup();
+    return value;
+}
+
+void createConfig() {
+    QSettings settings("qt.ini", QSettings::IniFormat);
+    settings.beginGroup("/API");
+    settings.setValue("/homeIP", "http://192.168.0.10:8000");
+    settings.setValue("publicIP", "http://85.160.74.136");
+    settings.endGroup();
+}
+
 void initApiAddr() {
-    std::string addr1 = "http://192.168.0.10:8000";
-    std::string addr2 = "http://85.160.74.136";
+    createConfig();
+    std::string addr1 = readConfig("homeIP");
+    std::string addr2 = readConfig("publicIP");
     std::string addr = addr1 + "/apistatus";
     std::string readBuffer;
     long httpCode;

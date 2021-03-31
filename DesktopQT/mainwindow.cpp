@@ -3,6 +3,7 @@
 #include "createuser.h"
 #include "userworkspace.h"
 #include "utils.h"
+#include "files.h"
 
 extern std::string API_ADDR;
 
@@ -62,5 +63,6 @@ void MainWindow::on_btn_login_clicked()
 
 void MainWindow::on_btn_cancel_clicked()
 {
+    cleanUp();
     close();
 }
