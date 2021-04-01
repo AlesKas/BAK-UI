@@ -12,7 +12,6 @@ int main(int argc, char *argv[])
         dialog.exec();
     }
     initApiAddr();
-    setUpDirs();
     MainWindow w;
     w.show();
     a.exec();

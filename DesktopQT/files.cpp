@@ -5,33 +5,35 @@ std::string APP_DIRECTORY;
 
 void remove_dir(const char *path)
 {
-        struct dirent *entry = NULL;
-        DIR *dir = NULL;
-        dir = opendir(path);
-        while(entry = readdir(dir))
-        {
-                DIR *sub_dir = NULL;
-                FILE *file = NULL;
-                char abs_path[100] = {0};
-                if(*(entry->d_name) != '.')
-                {
-                        sprintf(abs_path, "%s/%s", path, entry->d_name);
-                        if(sub_dir = opendir(abs_path))
-                        {
-                                closedir(sub_dir);
-                                remove_dir(abs_path);
-                        }
-                        else
-                        {
-                                if(file = fopen(abs_path, "r"))
-                                {
-                                        fclose(file);
-                                        remove(abs_path);
-                                }
-                        }
-                }
-        }
-        remove(path);
+#if defined(WIN32) || defined (WIN64)
+    struct dirent *entry = NULL;
+    DIR *dir = NULL;
+    dir = opendir(path);
+    while(entry = readdir(dir))
+    {
+            DIR *sub_dir = NULL;
+            FILE *file = NULL;
+            char abs_path[100] = {0};
+            if(*(entry->d_name) != '.')
+            {
+                    sprintf(abs_path, "%s/%s", path, entry->d_name);
+                    if(sub_dir = opendir(abs_path))
+                    {
+                            closedir(sub_dir);
+                            remove_dir(abs_path);
+                    }
+                    else
+                    {
+                            if(file = fopen(abs_path, "r"))
+                            {
+                                    fclose(file);
+                                    remove(abs_path);
+                            }
+                    }
+            }
+    }
+    remove(path);
+#endif
 }
 
 void setUpDirs() {
@@ -46,7 +48,7 @@ void setUpDirs() {
 
 #ifdef linux
     std::string tmp = tmpPath + std::string("BAK.XXXXXX");
-    char *tmp_dirname = mkdtemp(tmpChar);
+    char *tmp_dirname = mkdtemp(&tmp[0]);
     if (tmp_dirname != NULL) {
         APP_DIRECTORY = tmp_dirname;
     }
