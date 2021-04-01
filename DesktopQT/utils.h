@@ -8,6 +8,9 @@
 #include <QMessageBox>
 #include <nlohmann/json.hpp>
 #include <QSettings>
+#include <QApplication>
+#include <fstream>
+#include <QDir>
 
 using json = nlohmann::json;
 
@@ -26,6 +29,8 @@ const std::map<std::string, std::string> iconPaths {
 };
 
 void initApiAddr();
+bool isFirstRun();
+void createConfig(std::string homeIP, std::string publicIP);
 std::string to_hex(unsigned char ch);
 std::string sha256(std::string line);
 std::string getIcon(std::string fileType);

@@ -5,21 +5,38 @@ std::string API_ADDR;
 std::string readConfig(std::string tag) {
     QSettings settings("qt.ini", QSettings::IniFormat);
     settings.beginGroup("API");
-    std::string value =  settings.value(tag.c_str()).toString().toUtf8().constData();
+    std::string value = settings.value(tag.c_str()).toString().toUtf8().constData();
     settings.endGroup();
     return value;
 }
 
-void createConfig() {
+bool isFirstRun() {
+    QCoreApplication::setOrganizationName("MySoft");
+    QCoreApplication::setOrganizationDomain("mysoft.com");
+    QCoreApplication::setApplicationName("Star Runner");
     QSettings settings("qt.ini", QSettings::IniFormat);
-    settings.beginGroup("/API");
-    settings.setValue("/homeIP", "http://192.168.0.10:8000");
-    settings.setValue("publicIP", "http://85.160.74.136");
+    settings.beginGroup("API");
+    std::string homeIP = settings.value("homeIP").toString().toUtf8().constData();
+    std::string publicIP = settings.value("homeIP").toString().toUtf8().constData();
     settings.endGroup();
+    if (homeIP == "" || publicIP == "") {
+        return true;
+    }
+    return false;
+}
+
+void createConfig(std::string homeIP, std::string publicIP) {
+    std::string path = QDir::currentPath().toUtf8().constData();
+    QSettings* settings = new QSettings(QDir::currentPath() + "/qt.ini", QSettings::IniFormat);
+    settings->beginGroup("API");
+    settings->setValue("homeIP", homeIP.c_str());
+    settings->setValue("publicIP", publicIP.c_str());
+    settings->setValue("firstRun", false);
+    settings->endGroup();
+    settings->sync();
 }
 
 void initApiAddr() {
-    createConfig();
     std::string addr1 = readConfig("homeIP");
     std::string addr2 = readConfig("publicIP");
     std::string addr = addr1 + "/apistatus";
@@ -31,9 +48,7 @@ void initApiAddr() {
     } else {
         addr = addr2 + "/apistatus";
         httpCode = makeCurlRequest("GET", addr.c_str(), &readBuffer, NULL, 1);
-        json resp = json::parse(readBuffer);
-        auto msg = resp["success"].get<bool>();
-        if (msg) {
+        if (httpCode == 200) {
             API_ADDR = addr2;
         } else {
             QMessageBox::critical(NULL, "Critical error", "Cannot connect to server.");
