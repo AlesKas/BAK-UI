@@ -149,6 +149,7 @@ long downloadAndOpen(UserWorkspace* uw, std::string url, std::string path, std::
     }
 #if defined(WIN32) || defined (WIN64)
     ShellExecuteA(0, 0, output.c_str(), 0, 0, SW_SHOW);
+    uw->setCursor(Qt::ArrowCursor);
 #endif
 #ifdef linux
 

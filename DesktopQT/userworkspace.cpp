@@ -177,7 +177,7 @@ void UserWorkspace::on_actioncd_triggered() {
                 std::string addr = API_ADDR + "/share/" + currentUser + "/list";
                 makeCurlRequest("GET", addr.c_str(), &readBuffer, NULL, 10);
                 fillWidget(ui->shareWidget, readBuffer);
-            } else {
+            }  else {
                 updatePath();
                 fillWorkSpace(ui->shareWidget, sharedWorkspace);
             }
