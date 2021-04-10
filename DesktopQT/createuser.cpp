@@ -52,7 +52,7 @@ void CreateUser::on_buttonBox_accepted()
         j["password"] = passwdHash;
         addr = API_ADDR + "/users/create";
         readBuffer = "";
-        httpCode = makeCurlRequest("PUT", addr.c_str(), &readBuffer, j.dump().c_str(), 10);
+        httpCode = makeCurlRequest("POST", addr.c_str(), &readBuffer, j.dump().c_str(), 10);
 
         if (httpCode == 204) {
             showMessaggeBox("User created successfully.", "Success", QMessageBox::Information);

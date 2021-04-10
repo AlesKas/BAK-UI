@@ -100,7 +100,7 @@ long makePostFileCurlRequest(UserWorkspace* uw, const char* url, const char* pos
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)returnData);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
     curl_easy_setopt(curl, CURLOPT_HTTPPOST, formpost);
-    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
     curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, stats.st_size);
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
     uw->setCursor(Qt::BusyCursor);

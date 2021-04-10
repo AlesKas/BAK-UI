@@ -216,7 +216,7 @@ void UserWorkspace::createFolder() {
     if(ok && !folderName.isEmpty()) {
         std::string addr = API_ADDR + "/files/folder/" + currentUser + "?directory=" + path + "&folderName=" + folderName.toUtf8().constData();
         std::string returnData;
-        makeCurlRequest("PUT", addr.c_str(), &returnData, NULL, 10);
+        makeCurlRequest("POST", addr.c_str(), &returnData, NULL, 10);
         fillWorkSpace(ui->listWidget, currentUser);
     } else if (ok && folderName.isEmpty()) {
         showMessaggeBox("Please enter name.", "Error", QMessageBox::Warning);
