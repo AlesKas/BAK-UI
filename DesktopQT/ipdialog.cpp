@@ -6,8 +6,8 @@ IPdialog::IPdialog(QWidget *parent) :
     ui(new Ui::IPdialog)
 {
     ui->setupUi(this);
-    ui->localIP->setInputMask( "000.000.000.000" );
-    ui->publicIP->setInputMask( "000.000.000.000" );
+    ui->localIP->setInputMask( "000.000.000.000:0000" );
+    ui->publicIP->setInputMask( "000.000.000.000:0000" );
 }
 
 IPdialog::~IPdialog()

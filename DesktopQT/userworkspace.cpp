@@ -245,7 +245,7 @@ void UserWorkspace::shareItem() {
                 std::string fileName = selectedItem->text().toUtf8().constData();
                 fileName.erase(std::remove(fileName.begin(), fileName.end(), '\n'), fileName.end());
                 addr = API_ADDR + "/share/" + currentUser + "?toUser=" + item + "&directory=" + path + "&fileName=" + fileName;
-                makeCurlRequest("PUT", addr.c_str(), &readBuffer, NULL, 10);
+                makeCurlRequest("POST", addr.c_str(), &readBuffer, NULL, 10);
             }
         }
         fillWorkSpace(ui->listWidget, currentUser);
