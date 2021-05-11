@@ -53,9 +53,9 @@ void initApiAddr() {
             json j = json::parse(readBuffer);
             success = j["success"].get<bool>();
         }  catch (std::exception) {
-
+            success = true;
         }
-        if (success && (httpCode == 200)) {
+        if (success) {
             API_ADDR = addr2;
         } else {
             QMessageBox::critical(NULL, "Critical error", "Cannot connect to server.");
